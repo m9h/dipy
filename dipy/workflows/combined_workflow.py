@@ -1541,26 +1541,33 @@ def execute_semantic_pipeline(
                     ).get(key)
                     if resolved:
                         passthrough[key] = resolved
-            # Also create pass-through for common output names
-            if "input_files" in stage_config:
-                input_ref = stage_config["input_files"]
-                resolved_input = resolve_stage_parameters(
-                    {"input_files": input_ref}, resolved_outputs, io_config
-                ).get("input_files")
-                if resolved_input:
-                    # Map all out_* keys to the resolved input
-                    try:
-                        expected_outs = introspect_workflow_outputs(
-                            stage_config.get("cli", "")
-                        )
-                    except Exception:
-                        expected_outs = set()
-                    for out_key in expected_outs:
-                        passthrough[out_key] = resolved_input
-                    # Always set a generic pass-through
-                    passthrough["out_resliced"] = resolved_input
-                    passthrough["out_corrected"] = resolved_input
-                    passthrough["out_moved"] = resolved_input
+            # Find the primary input to use as pass-through output.
+            # Check common input parameter names in order of priority.
+            primary_input = None
+            for input_key in ("input_files", "moving_files",
+                              "streamline_files", "pam_files"):
+                if input_key in stage_config:
+                    ref = stage_config[input_key]
+                    resolved = resolve_stage_parameters(
+                        {input_key: ref}, resolved_outputs, io_config
+                    ).get(input_key)
+                    if resolved:
+                        primary_input = resolved
+                        break
+            if primary_input:
+                # Map all expected out_* keys to the primary input
+                try:
+                    expected_outs = introspect_workflow_outputs(
+                        stage_config.get("cli", "")
+                    )
+                except Exception:
+                    expected_outs = set()
+                for out_key in expected_outs:
+                    passthrough[out_key] = primary_input
+                # Always set generic pass-through names
+                for generic in ("out_resliced", "out_corrected",
+                                "out_moved", "out_tractogram"):
+                    passthrough[generic] = primary_input
             resolved_outputs[stage_name] = passthrough
             stages_info.append(
                 {
