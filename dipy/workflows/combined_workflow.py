@@ -1788,24 +1788,26 @@ class AutoFlow(Workflow):
 
             for sub_label, sessions in subjects.items():
                 for ses_label, modalities in sessions.items():
-                    dwi_files = modalities.get("dwi", {})
-                    anat_files = modalities.get("anat", {})
+                    dwi_list = modalities.get("dwi", [])
+                    anat_list = modalities.get("anat", [])
 
-                    dwi_nii = dwi_files.get("dwi", [None])[0] if \
-                        isinstance(dwi_files.get("dwi"), list) else \
-                        dwi_files.get("dwi")
-                    if not dwi_nii:
+                    if not dwi_list:
                         logger.warning(
                             f"No DWI found for {sub_label}/{ses_label}, "
                             "skipping"
                         )
                         continue
 
-                    bval = dwi_files.get("bval")
-                    bvec = dwi_files.get("bvec")
-                    t1 = anat_files.get("T1w", [None])[0] if \
-                        isinstance(anat_files.get("T1w"), list) else \
-                        anat_files.get("T1w")
+                    # Use first DWI file
+                    dwi_entry = dwi_list[0]
+                    dwi_nii = dwi_entry["path"]
+                    bval = dwi_entry.get("bval")
+                    bvec = dwi_entry.get("bvec")
+
+                    # Use first T1w if available
+                    t1_entries = [a for a in anat_list
+                                 if a.get("entities", {}).get("suffix") == "T1w"]
+                    t1 = t1_entries[0]["path"] if t1_entries else None
 
                     # Build per-subject output dir
                     if ses_label and ses_label != "none":
