@@ -271,10 +271,16 @@ def validate_pipeline_config(pipeline_stages):
         except ValueError as e:
             errors.append(f"Stage '{stage_name}': {str(e)}")
         except Exception as e:
-            errors.append(
-                f"Stage '{stage_name}': Failed to introspect CLI "
-                f"'{cli_name}': {str(e)}"
+            # Import failures (e.g., missing GPU/display for viz-dependent
+            # workflows) should not block the entire pipeline validation.
+            # Log a warning and allow the stage to proceed with unknown
+            # outputs — it will fail at runtime if actually unreachable.
+            logger.warning(
+                f"Stage '{stage_name}': Could not introspect CLI "
+                f"'{cli_name}': {str(e)}. Stage will be attempted at "
+                f"runtime."
             )
+            stage_outputs[stage_name] = set()
 
     for stage in pipeline_stages:
         stage_name = stage["name"]
@@ -308,6 +314,8 @@ def validate_pipeline_config(pipeline_stages):
                 available_outputs = stage_outputs[ref_stage]
                 if ref_output == "out_dir":
                     pass  # out_dir is always a valid reference on any stage
+                elif not available_outputs:
+                    pass  # introspection failed; allow any output reference
                 elif ref_output not in available_outputs:
                     errors.append(
                         f"Stage '{stage_name}': Unknown output '{ref_output}' "
