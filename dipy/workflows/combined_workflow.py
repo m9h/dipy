@@ -1758,6 +1758,97 @@ class AutoFlow(Workflow):
             return
 
         # =====================================================================
+        # BIDS mode: if bids_folder is provided, discover subjects and loop
+        # =====================================================================
+        if bids_folder and os.path.isdir(bids_folder):
+            from dipy.io.bids import is_bids_dir, load_bids_layout, \
+                write_derivative_description
+            if not is_bids_dir(bids_folder):
+                logger.error(
+                    f"{bids_folder} does not appear to be a BIDS directory "
+                    "(missing dataset_description.json)"
+                )
+                sys.exit(1)
+
+            bids_out = out_dir or os.path.join(
+                os.path.dirname(bids_folder),
+                os.path.basename(bids_folder) + "-derivatives", "dipy",
+            )
+            os.makedirs(bids_out, exist_ok=True)
+
+            layout = load_bids_layout(bids_folder)
+
+            # Write derivative dataset_description.json
+            source_desc = layout.get("dataset_description", {}).copy()
+            source_desc["bids_dir"] = str(bids_folder)
+            write_derivative_description(bids_out, source_dataset=source_desc)
+
+            subjects = layout.get("subjects", {})
+            logger.info(f"BIDS mode: {len(subjects)} subject(s) found")
+
+            for sub_label, sessions in subjects.items():
+                for ses_label, modalities in sessions.items():
+                    dwi_files = modalities.get("dwi", {})
+                    anat_files = modalities.get("anat", {})
+
+                    dwi_nii = dwi_files.get("dwi", [None])[0] if \
+                        isinstance(dwi_files.get("dwi"), list) else \
+                        dwi_files.get("dwi")
+                    if not dwi_nii:
+                        logger.warning(
+                            f"No DWI found for {sub_label}/{ses_label}, "
+                            "skipping"
+                        )
+                        continue
+
+                    bval = dwi_files.get("bval")
+                    bvec = dwi_files.get("bvec")
+                    t1 = anat_files.get("T1w", [None])[0] if \
+                        isinstance(anat_files.get("T1w"), list) else \
+                        anat_files.get("T1w")
+
+                    # Build per-subject output dir
+                    if ses_label and ses_label != "none":
+                        sub_out = os.path.join(
+                            bids_out, sub_label, ses_label
+                        )
+                    else:
+                        sub_out = os.path.join(bids_out, sub_label)
+                    os.makedirs(sub_out, exist_ok=True)
+
+                    logger.info(
+                        f"Processing {sub_label}/{ses_label}: "
+                        f"DWI={os.path.basename(str(dwi_nii))}"
+                    )
+
+                    # Build input_files list and recurse into file mode
+                    sub_inputs = [str(dwi_nii)]
+                    if bval:
+                        sub_inputs.append(str(bval))
+                    if bvec:
+                        sub_inputs.append(str(bvec))
+
+                    self.run(
+                        input_files=sub_inputs,
+                        t1_file=str(t1) if t1 else None,
+                        mask_file=mask_file,
+                        dwi_opp_phase_file=dwi_opp_phase_file,
+                        bids_folder=None,  # prevent recursion
+                        atlas_tractogram=atlas_tractogram,
+                        bundle_atlas_dir=bundle_atlas_dir,
+                        interactive_mode=interactive_mode,
+                        pipeline_type=pipeline_type,
+                        start=start,
+                        dry_run=dry_run,
+                        list_pipelines=False,
+                        out_dir=sub_out,
+                        out_report=out_report,
+                    )
+
+            logger.info("BIDS processing complete")
+            return
+
+        # =====================================================================
         # Detect file types from input_files
         # =====================================================================
 
