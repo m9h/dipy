@@ -1528,7 +1528,7 @@ def execute_semantic_pipeline(
             stages_info.append(
                 {
                     "name": stage_name,
-                    "cli": stage.get("cli", ""),
+                    "cli": stage_config.get("cli", ""),
                     "duration": 0,
                     "success": False,
                     "error": str(e),
