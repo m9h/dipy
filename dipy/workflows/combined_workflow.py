@@ -1522,9 +1522,46 @@ def execute_semantic_pipeline(
         except ImportError as e:
             # Import failures (e.g., fury/wgpu on headless) should not
             # kill the pipeline — skip the stage and continue.
+            # Pass through input references as outputs so downstream stages
+            # can fall back to the original data.
             logger.warning(
                 f"Stage '{stage_name}' skipped due to import error: {e}"
             )
+            passthrough = {}
+            for key, val in stage_config.items():
+                if key in ("name", "cli"):
+                    continue
+                if isinstance(val, str) and val.startswith("${"):
+                    # Map expected outputs to the input references.
+                    # e.g., if reslice takes input_files=${io.dwi}, then
+                    # downstream refs to ${reslice.out_resliced} should
+                    # resolve to the original dwi path.
+                    resolved = resolve_stage_parameters(
+                        {key: val}, resolved_outputs, io_config
+                    ).get(key)
+                    if resolved:
+                        passthrough[key] = resolved
+            # Also create pass-through for common output names
+            if "input_files" in stage_config:
+                input_ref = stage_config["input_files"]
+                resolved_input = resolve_stage_parameters(
+                    {"input_files": input_ref}, resolved_outputs, io_config
+                ).get("input_files")
+                if resolved_input:
+                    # Map all out_* keys to the resolved input
+                    try:
+                        expected_outs = introspect_workflow_outputs(
+                            stage_config.get("cli", "")
+                        )
+                    except Exception:
+                        expected_outs = set()
+                    for out_key in expected_outs:
+                        passthrough[out_key] = resolved_input
+                    # Always set a generic pass-through
+                    passthrough["out_resliced"] = resolved_input
+                    passthrough["out_corrected"] = resolved_input
+                    passthrough["out_moved"] = resolved_input
+            resolved_outputs[stage_name] = passthrough
             stages_info.append(
                 {
                     "name": stage_name,
