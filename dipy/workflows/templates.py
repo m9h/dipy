@@ -359,11 +359,11 @@ b0_threshold = 50
 
 [[pipeline]]
 name = "brain_mask"
-cli = "dipy_brain_mask"
+cli = "dipy_median_otsu"
 input_files = "${reslice.out_resliced}"
-bvalues_files = ["${io.bvals}"]
 median_radius = 2
 numpass = 5
+vol_idx = "0"
 save_masked = true
 
 [[pipeline]]
@@ -494,11 +494,11 @@ b0_threshold = 50
 
 [[pipeline]]
 name = "brain_mask"
-cli = "dipy_brain_mask"
+cli = "dipy_median_otsu"
 input_files = "${reslice.out_resliced}"
-bvalues_files = ["${io.bvals}"]
 median_radius = 2
 numpass = 5
+vol_idx = "0"
 save_masked = true
 
 [[pipeline]]
