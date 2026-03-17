@@ -1519,6 +1519,21 @@ def execute_semantic_pipeline(
             if outputs:
                 logger.debug(f"Stage '{stage_name}' outputs: {outputs}")
 
+        except ImportError as e:
+            # Import failures (e.g., fury/wgpu on headless) should not
+            # kill the pipeline — skip the stage and continue.
+            logger.warning(
+                f"Stage '{stage_name}' skipped due to import error: {e}"
+            )
+            stages_info.append(
+                {
+                    "name": stage_name,
+                    "cli": stage.get("cli", ""),
+                    "duration": 0,
+                    "success": False,
+                    "error": str(e),
+                }
+            )
         except Exception as e:
             logger.error(f"Pipeline failed at stage '{stage_name}': {str(e)}")
             import traceback
