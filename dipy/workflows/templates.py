@@ -412,6 +412,20 @@ mask_files = "${brain_mask.out_mask}"
 extract_pam_values = true
 out_dir = "${io.out_dir}/csd"
 
+# FORCE microstructure reconstruction
+[[pipeline]]
+name = "force_fit"
+cli = "dipy_fit_force"
+input_files = "${denoise.out_denoised}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+mask_files = "${brain_mask.out_mask}"
+num_simulations = 500000
+num_cpus = -1
+use_cache = true
+verbose = true
+out_dir = "${io.out_dir}/force"
+
 # Tractography
 [[pipeline]]
 name = "tracking"
@@ -554,6 +568,20 @@ bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
 extract_pam_values = true
 out_dir = "${io.out_dir}/csd"
+
+# FORCE microstructure reconstruction
+[[pipeline]]
+name = "force_fit"
+cli = "dipy_fit_force"
+input_files = "${denoise.out_denoised}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+mask_files = "${brain_mask.out_mask}"
+num_simulations = 500000
+num_cpus = -1
+use_cache = true
+verbose = true
+out_dir = "${io.out_dir}/force"
 
 # Tractography
 [[pipeline]]

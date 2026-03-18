@@ -47,6 +47,107 @@ except ImportError:
     toml, have_toml, _ = optional_package("tomli")
 
 
+# BIDS output filename mapping: pipeline output -> BIDS derivative name
+_BIDS_RENAME_MAP = {
+    # Brain masking
+    "brain_mask.nii.gz": ("dwi", "{prefix}_desc-brain_mask.nii.gz"),
+    "brain_masked.nii.gz": ("dwi", "{prefix}_desc-masked_dwi.nii.gz"),
+    "dwi_masked.nii.gz": ("dwi", "{prefix}_desc-masked_dwi.nii.gz"),
+    # Preprocessing
+    "dwi_patch2self.nii.gz": ("dwi", "{prefix}_desc-denoised_dwi.nii.gz"),
+    "dwi_unring.nii.gz": ("dwi", "{prefix}_desc-unringed_dwi.nii.gz"),
+    "dwi_biasfield_corrected.nii.gz": ("dwi", "{prefix}_desc-biascorr_dwi.nii.gz"),
+    "bias_field.nii.gz": ("dwi", "{prefix}_desc-biasfield_dwi.nii.gz"),
+    "b0.nii.gz": ("dwi", "{prefix}_desc-b0_dwi.nii.gz"),
+    "resliced.nii.gz": ("dwi", "{prefix}_desc-resliced_dwi.nii.gz"),
+    "moved_motion_correction.nii.gz": ("dwi", "{prefix}_desc-motioncorr_dwi.nii.gz"),
+    # DTI
+    "fa.nii.gz": ("dwi", "{prefix}_model-DTI_param-FA_mdp.nii.gz"),
+    "md.nii.gz": ("dwi", "{prefix}_model-DTI_param-MD_mdp.nii.gz"),
+    "rd.nii.gz": ("dwi", "{prefix}_model-DTI_param-RD_mdp.nii.gz"),
+    "ad.nii.gz": ("dwi", "{prefix}_model-DTI_param-AD_mdp.nii.gz"),
+    "ga.nii.gz": ("dwi", "{prefix}_model-DTI_param-GA_mdp.nii.gz"),
+    "rgb.nii.gz": ("dwi", "{prefix}_model-DTI_desc-colorFA_mdp.nii.gz"),
+    "mode.nii.gz": ("dwi", "{prefix}_model-DTI_param-mode_mdp.nii.gz"),
+    "s0.nii.gz": ("dwi", "{prefix}_model-DTI_param-S0_mdp.nii.gz"),
+    "tensors.nii.gz": ("dwi", "{prefix}_model-DTI_desc-tensor_mdp.nii.gz"),
+    "evals.nii.gz": ("dwi", "{prefix}_model-DTI_desc-eigenvalues_mdp.nii.gz"),
+    "evecs.nii.gz": ("dwi", "{prefix}_model-DTI_desc-eigenvectors_mdp.nii.gz"),
+    # CSD
+    "gfa.nii.gz": ("dwi", "{prefix}_model-CSD_param-GFA_mdp.nii.gz"),
+    "shm.nii.gz": ("dwi", "{prefix}_model-CSD_desc-SHcoeffs_mdp.nii.gz"),
+    "qa.nii.gz": ("dwi", "{prefix}_model-CSD_param-QA_mdp.nii.gz"),
+    # FORCE
+    "wm_fraction.nii.gz": ("dwi", "{prefix}_model-FORCE_param-WMfrac_mdp.nii.gz"),
+    "gm_fraction.nii.gz": ("dwi", "{prefix}_model-FORCE_param-GMfrac_mdp.nii.gz"),
+    "csf_fraction.nii.gz": ("dwi", "{prefix}_model-FORCE_param-CSFfrac_mdp.nii.gz"),
+    "nd.nii.gz": ("dwi", "{prefix}_model-FORCE_param-ND_mdp.nii.gz"),
+    "ufa.nii.gz": ("dwi", "{prefix}_model-FORCE_param-uFA_mdp.nii.gz"),
+    "num_fibers.nii.gz": ("dwi", "{prefix}_model-FORCE_param-numfibers_mdp.nii.gz"),
+    "dispersion.nii.gz": ("dwi", "{prefix}_model-FORCE_param-OD_mdp.nii.gz"),
+    "uncertainty.nii.gz": ("dwi", "{prefix}_model-FORCE_desc-uncertainty_mdp.nii.gz"),
+    "ambiguity.nii.gz": ("dwi", "{prefix}_model-FORCE_desc-ambiguity_mdp.nii.gz"),
+    # Tractography
+    "out_tractogram.trx": ("dwi", "{prefix}_desc-wholebrain_tractography.trx"),
+    # Registration
+    "moved_register.trx": ("dwi", "{prefix}_space-MNI_desc-SLR_tractography.trx"),
+}
+
+
+def _bidsify_outputs(out_dir, sub_label, ses_label):
+    """Rename pipeline outputs to BIDS-compliant derivative filenames.
+
+    Parameters
+    ----------
+    out_dir : str
+        Subject output directory.
+    sub_label : str
+        Subject label (e.g., 'sub-01').
+    ses_label : str
+        Session label (e.g., 'ses-01' or 'none').
+    """
+    if ses_label and ses_label != "none":
+        prefix = f"{sub_label}_{ses_label}"
+    else:
+        prefix = sub_label
+
+    out_path = Path(out_dir)
+
+    # Create BIDS modality directories
+    dwi_dir = out_path / "dwi"
+    dwi_dir.mkdir(exist_ok=True)
+
+    # Rename files in root and subdirectories
+    for src_name, (modality, bids_template) in _BIDS_RENAME_MAP.items():
+        bids_name = bids_template.format(prefix=prefix)
+        target_dir = out_path / modality
+
+        # Search root and subdirs (dti/, csd/, force/)
+        for src_file in out_path.rglob(src_name):
+            target = target_dir / bids_name
+            if src_file != target and src_file.exists():
+                target_dir.mkdir(exist_ok=True)
+                shutil.copy2(str(src_file), str(target))
+                logger.debug(f"BIDS: {src_file.name} -> {target.name}")
+
+    # Handle PAM files (peaks)
+    for pam_file in out_path.rglob("peaks.pam5"):
+        parent = pam_file.parent.name
+        if parent == "dti":
+            model = "DTI"
+        elif parent == "csd":
+            model = "CSD"
+        elif parent == "force":
+            model = "FORCE"
+        else:
+            model = "unknown"
+        target = dwi_dir / f"{prefix}_model-{model}_peaks.pam5"
+        if pam_file != target:
+            shutil.copy2(str(pam_file), str(target))
+
+    logger.info(f"BIDS: Renamed outputs for {prefix}")
+
+
 def _pipeline_fingerprint(*, pipeline_stages, io_config):
     """Compute a short hash identifying a pipeline and its input configuration.
 
@@ -1905,6 +2006,10 @@ class AutoFlow(Workflow):
                         out_dir=sub_out,
                         out_report=out_report,
                     )
+
+                    # Rename outputs to BIDS-compliant names
+                    if not dry_run:
+                        _bidsify_outputs(sub_out, sub_label, ses_label)
 
             logger.info("BIDS processing complete")
             return
