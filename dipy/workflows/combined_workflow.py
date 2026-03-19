@@ -73,6 +73,16 @@ _BIDS_RENAME_MAP = {
     "tensors.nii.gz": ("dwi", "{prefix}_model-DTI_desc-tensor_mdp.nii.gz"),
     "evals.nii.gz": ("dwi", "{prefix}_model-DTI_desc-eigenvalues_mdp.nii.gz"),
     "evecs.nii.gz": ("dwi", "{prefix}_model-DTI_desc-eigenvectors_mdp.nii.gz"),
+    # Free Water DTI
+    "fwdti_fa.nii.gz": ("dwi", "{prefix}_model-fwDTI_param-FA_mdp.nii.gz"),
+    "fwdti_md.nii.gz": ("dwi", "{prefix}_model-fwDTI_param-MD_mdp.nii.gz"),
+    "fwdti_rd.nii.gz": ("dwi", "{prefix}_model-fwDTI_param-RD_mdp.nii.gz"),
+    "fwdti_ad.nii.gz": ("dwi", "{prefix}_model-fwDTI_param-AD_mdp.nii.gz"),
+    "fwdti_ga.nii.gz": ("dwi", "{prefix}_model-fwDTI_param-GA_mdp.nii.gz"),
+    "fwdti_rgb.nii.gz": ("dwi", "{prefix}_model-fwDTI_desc-colorFA_mdp.nii.gz"),
+    "fwdti_tensors.nii.gz": ("dwi", "{prefix}_model-fwDTI_desc-tensor_mdp.nii.gz"),
+    "fwdti_evals.nii.gz": ("dwi", "{prefix}_model-fwDTI_desc-eigenvalues_mdp.nii.gz"),
+    "fwdti_evecs.nii.gz": ("dwi", "{prefix}_model-fwDTI_desc-eigenvectors_mdp.nii.gz"),
     # CSD
     "gfa.nii.gz": ("dwi", "{prefix}_model-CSD_param-GFA_mdp.nii.gz"),
     "shm.nii.gz": ("dwi", "{prefix}_model-CSD_desc-SHcoeffs_mdp.nii.gz"),

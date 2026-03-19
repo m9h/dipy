@@ -403,6 +403,17 @@ extract_pam_values = true
 out_dir = "${io.out_dir}/dti"
 
 [[pipeline]]
+name = "fwdti_fit"
+cli = "dipy_fit_fwdti"
+input_files = "${denoise.out_denoised}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+mask_files = "${brain_mask.out_mask}"
+fit_method = "NLS"
+nifti_tensor = true
+out_dir = "${io.out_dir}/fwdti"
+
+[[pipeline]]
 name = "csd_fit"
 cli = "dipy_fit_csd"
 input_files = "${denoise.out_denoised}"
@@ -558,6 +569,17 @@ mask_files = "${brain_mask.out_mask}"
 fit_method = "WLS"
 extract_pam_values = true
 out_dir = "${io.out_dir}/dti"
+
+[[pipeline]]
+name = "fwdti_fit"
+cli = "dipy_fit_fwdti"
+input_files = "${denoise.out_denoised}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+mask_files = "${brain_mask.out_mask}"
+fit_method = "NLS"
+nifti_tensor = true
+out_dir = "${io.out_dir}/fwdti"
 
 [[pipeline]]
 name = "csd_fit"
