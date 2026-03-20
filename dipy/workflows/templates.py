@@ -437,6 +437,18 @@ use_cache = true
 verbose = true
 out_dir = "${io.out_dir}/force"
 
+# DTI-ALPS (glymphatic function)
+[[pipeline]]
+name = "alps"
+cli = "dipy_alps"
+tensor_files = "${dti_fit.out_tensor}"
+fa_files = "${dti_fit.out_fa}"
+mask_files = "${brain_mask.out_mask}"
+fwdti_tensor_files = "${fwdti_fit.out_tensor}"
+roi_radius = 2.5
+registration = "ants"
+out_dir = "${io.out_dir}/alps"
+
 # Tractography
 [[pipeline]]
 name = "tracking"
@@ -604,6 +616,18 @@ num_cpus = -1
 use_cache = true
 verbose = true
 out_dir = "${io.out_dir}/force"
+
+# DTI-ALPS (glymphatic function)
+[[pipeline]]
+name = "alps"
+cli = "dipy_alps"
+tensor_files = "${dti_fit.out_tensor}"
+fa_files = "${dti_fit.out_fa}"
+mask_files = "${brain_mask.out_mask}"
+fwdti_tensor_files = "${fwdti_fit.out_tensor}"
+roi_radius = 2.5
+registration = "ants"
+out_dir = "${io.out_dir}/alps"
 
 # Tractography
 [[pipeline]]

@@ -1,6 +1,7 @@
 python_sources = [
     '__init__.py',
     'align.py',
+    'alps.py',
     'auto.py',
     'base.py',
     'cli.py',

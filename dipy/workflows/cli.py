@@ -7,6 +7,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.workflows.flow_runner import run_flow
 
 cli_flows = {
+    "dipy_alps": ("dipy.workflows.alps", "ALPSFlow"),
     "dipy_align_affine": ("dipy.workflows.align", "ImageRegistrationFlow"),
     "dipy_align_syn": ("dipy.workflows.align", "SynRegistrationFlow"),
     "dipy_apply_transform": ("dipy.workflows.align", "ApplyTransformFlow"),

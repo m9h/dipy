@@ -97,6 +97,9 @@ _BIDS_RENAME_MAP = {
     "dispersion.nii.gz": ("dwi", "{prefix}_model-FORCE_param-OD_mdp.nii.gz"),
     "uncertainty.nii.gz": ("dwi", "{prefix}_model-FORCE_desc-uncertainty_mdp.nii.gz"),
     "ambiguity.nii.gz": ("dwi", "{prefix}_model-FORCE_desc-ambiguity_mdp.nii.gz"),
+    # ALPS
+    "alps_index.csv": ("dwi", "{prefix}_desc-ALPS_metrics.csv"),
+    "alps_rois.nii.gz": ("dwi", "{prefix}_desc-ALPSrois_mask.nii.gz"),
     # Tractography
     "out_tractogram.trx": ("dwi", "{prefix}_desc-wholebrain_tractography.trx"),
     # Registration
